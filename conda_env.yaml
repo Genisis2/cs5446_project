@@ -1,0 +1,4 @@
+name: nus_cs5446_project
+dependencies:
+    - python=3.8.13
+    - pip
