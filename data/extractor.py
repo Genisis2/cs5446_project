@@ -11,7 +11,7 @@ import numpy as np
 _DATA_DIRP = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'csv/')
 
 def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], List[List[np.ndarray]]]:
-    """Initializes tennis match data using CSV's in data/
+    """Initializes tennis match data using CSV's in csv/
 
     Returns
         Tuple(states, actions, rewards):
