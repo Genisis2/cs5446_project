@@ -70,6 +70,8 @@ REWARD_COLS = [
     'reward'
 ]
 
+# return a 2-d list
+# each element is a numpy array for a trial
 def split_trials():
     start = 0
     trials = []
