@@ -24,7 +24,8 @@ for csv_fn in os.listdir(_DATA_DIRP):
         'opp_move_dist',
         'opp_move_speed',
         'prev_bounce_x',
-        'prev_bounce_y'
+        'prev_bounce_y',
+        'is_player_one'
     ]
     action_cols = [
         'curr_hit_x',
@@ -41,6 +42,10 @@ for csv_fn in os.listdir(_DATA_DIRP):
     one_hot_shot_type = game_df[['is_serve', 'is_forehand', 'is_backhand']].to_numpy()
     shot_type_val = np.argwhere(one_hot_shot_type == 1)[:,1] # Get only values of second col
     game_df['shot_type'] = shot_type_val
+
+    # Add in is_player_one column
+    player_one_id = np.min(game_df[['hit_id', 'opp_id']].to_numpy())
+    game_df['is_player_one'] = game_df['hit_id'] == player_one_id
 
     # Add in reward
     # 1 if both 1, else 0
