@@ -51,6 +51,30 @@ for csv_fn in os.listdir(_DATA_DIRP):
     # 1 if both 1, else 0
     game_df['reward'] = game_df['final_outcome'].to_numpy() * game_df['is_final_shot'].to_numpy()
 
+    # Split into rallies for feeding into the LSTM network.
+    reward_loc = game_df.columns.get_loc('reward')
+    rallies = []
+    rally_start = 0
+    for stroke_idx, is_final_shot in game_df['is_final_shot'].items():
+        # If final shot of the rally
+        if (is_final_shot == 1):
+            # Get the sequence of strokes representing the rally
+            rally_end = stroke_idx + 1
+            rally = game_df[rally_start:rally_end]
+
+            # If the last stroke is a loss for the hitter, 
+            # assign reward to the prev stroke
+            rally_length = rally_end - rally_start
+            # If rally_length == 1 and no rewards, it means
+            # the hitter failed at the serve stroke
+            if (rally_length > 1
+                    and rally.iloc[-1, reward_loc] != 1):
+                rally.iloc[-2, reward_loc] = 1
+
+            rallies.append(rally)
+            # Reset rally start
+            rally_start = rally_end
+
     # Extract features
     extracted_df = game_df[state_cols + action_cols + reward_cols]
     extracted_df.to_html(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'html/' + csv_fn + '.html'))
