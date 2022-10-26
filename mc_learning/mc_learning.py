@@ -1,14 +1,14 @@
 import numpy as np
 import torch
+from sklearn.model_selection import train_test_split
 
-from data import states, actions, rewards
+from data import trails 
 
 def train():
-    print(states, actions, rewards)
-    pass
+    print(trails)
 
 def test():
     pass
 
 if __name__ == '__main__':
-    train()
+    X_train, X_test, y_train, y_test = train_test_split(trails)

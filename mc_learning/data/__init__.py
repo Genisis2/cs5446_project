@@ -2,6 +2,6 @@
 Handles data retrieval
 """
 
-from .extractor import states, actions, rewards
+from .data_processor import trails
 
-__all__ = [states, actions, rewards]
+__all__ = [trails]
