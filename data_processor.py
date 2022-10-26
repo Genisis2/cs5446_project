@@ -1,9 +1,16 @@
+'''
+Put as reference first, use the unified `extractor.py` instead
+'''
+
 import os
 import pandas as pd
 
-DATA_1_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'csv/m-001-data-v3.csv')
-DATA_7_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'csv/m-007-data-v3.csv')
-DATA_99_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'csv/m-099-data-v3.csv')
+DATA_1_PATH = os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), 'csv/m-001-data-v3.csv')
+DATA_7_PATH = os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), 'csv/m-007-data-v3.csv')
+DATA_99_PATH = os.path.join(os.path.dirname(
+    os.path.abspath(__file__)), 'csv/m-099-data-v3.csv')
 
 DF_1 = pd.read_csv(DATA_1_PATH)
 DF_2 = pd.read_csv(DATA_7_PATH)
@@ -58,7 +65,7 @@ STATE_COLS = [
 
 ACTION_COLS = [
     'curr_hit_x',
-    'curr_hit_y', 
+    'curr_hit_y',
     'is_serve',
     'is_forehand',
     'is_backhand',
@@ -72,6 +79,8 @@ REWARD_COLS = [
 
 # return a 2-d list
 # each element is a numpy array for a trial
+
+
 def _split_trials():
     start = 0
     trials = []
@@ -80,13 +89,14 @@ def _split_trials():
 
             # every step -0.4, last step +1, calculate overall reward for one trail
             arr = df[DATA_COLS].loc[start:i].to_numpy()
-            trial_odd_row = arr[::2,:]
-            trial_even_row = arr[1::2,:]
+            trial_odd_row = arr[::2, :]
+            trial_even_row = arr[1::2, :]
             trial = [trial_odd_row]
-            if(len(trial_even_row)>0):
+            if (len(trial_even_row) > 0):
                 trial.append(trial_even_row)
             trials.append(trial)
-            start = i+1
+            start = i + 1
     return trials
+
 
 trails = _split_trials()
