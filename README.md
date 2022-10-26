@@ -39,6 +39,7 @@ https://en.wikipedia.org/wiki/Glossary_of_tennis_terms
 - `opp_move_speed`: Pre-calculated feature of speed
 - `prev_bounce_x`: X-pos of the incoming bounce
 - `prev_bounce_y`: Y-pos of the incoming bounce
+- `is_player_one`: (need to add) Indicates if the current `hit_id` is player one, where player one is the player in the game with the lower ID number.
 
 #### Actions
 - `curr_hit_x`: (Check later if these features affect results) X-pos of the hitting player at the moment of hitting the ball

@@ -2,6 +2,6 @@
 Handles data retrieval
 """
 
-from .extractor import states, actions, rewards
+from .extractor import train_dataset, test_dataset
 
-__all__ = [states, actions, rewards]
+__all__ = [train_dataset, test_dataset]
