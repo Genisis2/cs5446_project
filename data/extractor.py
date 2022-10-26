@@ -70,7 +70,7 @@ def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], 
 
         # Add in is_player_one column
         player_one_id = np.min(game_df[['hit_id', 'opp_id']].to_numpy())
-        game_df['is_player_one'] = game_df['hit_id'] == player_one_id
+        game_df['is_player_one'] = np.where(game_df['hit_id'] == player_one_id, 1, 0)
 
         # Add in reward
         # 1 if both 1, else 0
