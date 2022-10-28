@@ -5,7 +5,7 @@ https://github.com/Guiliang/DRL-ice-hockey
 
 # Q-definition
 - Let $Q(s,a)$ = Probability of the `hit_id` player at state $s$ winning the rally with action $a$
-- Loss function for DLR
+- Loss function for DRL
     - $L_t(\theta_t) = \mathop{\mathbb{E}}[(g_t + (1 - Q(S_{t+1}, a_{t+1}, \theta_{t})) - Q(S_{t}, a_{t}, \theta_{t})]$
         - $Q(S_{t}, a_{t}, \theta_{t})$: Probability of `hit_id` player at $s_t$ winning the rally
         - $1 - Q(S_{t+1}, a_{t+1}, \theta_{t})$: Still the probability of `hit_id` at $s_t$ winning the game because $Q(S_{t+1}, a_{t+1}, \theta_{t})$ is the just probability that `opp_id` wins the game. 

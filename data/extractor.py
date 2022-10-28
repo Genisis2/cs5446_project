@@ -82,7 +82,7 @@ def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], 
         rally_start = 0
         for stroke_idx, is_final_shot in game_df['is_final_shot'].items():
             # If final shot of the rally
-            if (is_final_shot == 1):
+            if is_final_shot == 1:
                 # Get the sequence of strokes representing the rally
                 rally_end = stroke_idx + 1
                 rally = game_df[rally_start:rally_end]
@@ -92,8 +92,7 @@ def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], 
                 rally_length = rally_end - rally_start
                 # If rally_length == 1 and no rewards, it means
                 # the hitter failed at the serve stroke
-                if (rally_length > 1
-                        and rally.iloc[-1, reward_loc] != 1):
+                if (rally_length > 1 and rally.iloc[-1, reward_loc] != 1):
                     rally.iloc[-2, reward_loc] = 1
 
                 rallies.append(rally)
@@ -103,8 +102,12 @@ def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], 
         # Split rallies into train/test
         total_rallies = len(rallies)
         train_count = int(_TRAIN_PERCENT * total_rallies)
-        rallies_train, rallies_test = train_test_split(rallies, train_size=train_count, 
-                        random_state=_SAMPLE_SEED, shuffle=True)
+        rallies_train, rallies_test = train_test_split(
+            rallies, 
+            train_size=train_count, 
+            random_state=_SAMPLE_SEED, 
+            shuffle=True,
+        )
 
         # Extract features
         train_states = []
