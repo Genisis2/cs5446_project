@@ -13,49 +13,65 @@ _DATA_DIRP = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'csv/')
 _TRAIN_PERCENT = 0.8
 _SAMPLE_SEED = 42
 
-def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], List[List[np.ndarray]]]:
+def _initialize_data() -> Tuple[Dict[str, List[np.ndarray]], Dict[str, List[np.ndarray]]]:
     """Initializes tennis match data using CSV's in csv/
 
     Returns
-        Tuple(states, actions, rewards):
-                2D Lists of `np.ndarray`'s describing the `states`, `actions`, and respective `rewards`. 
+        train_dataset, test_dataset
     """
     # Features to extract
-    state_cols = [
+    hit_state_cols = [
         'prev_hit_x',
         'prev_hit_y',
         'prev_opp_x',
         'prev_opp_y',
-        'hit_move_dist',
-        'hit_move_speed',
         'curr_opp_x',
         'curr_opp_y',
         'opp_move_dist',
         'opp_move_speed',
         'prev_bounce_x',
-        'prev_bounce_y',
-        'is_player_one'
+        'prev_bounce_y'
     ]
-    action_cols = [
+    hit_action_cols = [
         'curr_hit_x',
         'curr_hit_y', 
+        'hit_move_dist',
+        'hit_move_speed',
         'shot_type',
         'bounce_x',
         'bounce_y'
     ]
-    reward_cols = [
-        'reward'
+    opp_state_cols = [
+        'prev_opp_x',
+        'prev_opp_y',
+        'prev_hit_x',
+        'prev_hit_y',
+        'curr_hit_x',
+        'curr_hit_y',
+        'hit_move_dist',
+        'hit_move_speed',
+        'prev_bounce_x',
+        'prev_bounce_y'
+    ]
+    opp_action_cols = [
+        'curr_opp_x',
+        'curr_opp_y',
+        'opp_move_dist',
+        'opp_move_speed',
+        'shot_type',
+        'bounce_x',
+        'bounce_y'
     ]
     
     train_dataset:Dict[str, List[List[np.ndarray]]] = {
-      'states': [],
-      'actions': [],
-      'rewards': []
+        'states': [],
+        'actions': [],
+        'rewards': []
     }
     test_dataset:Dict[str, List[List[np.ndarray]]] = {
-      'states': [],
-      'actions': [],
-      'rewards': []
+        'states': [],
+        'actions': [],
+        'rewards': []
     }
 
     # Read the data from the input files
@@ -68,17 +84,8 @@ def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], 
         shot_type_val = np.argwhere(one_hot_shot_type == 1)[:,1] # Get only values of second col
         game_df['shot_type'] = shot_type_val
 
-        # Add in is_player_one column
-        player_one_id = np.min(game_df[['hit_id', 'opp_id']].to_numpy())
-        game_df['is_player_one'] = np.where(game_df['hit_id'] == player_one_id, 1, 0)
-
-        # Add in reward
-        # 1 if both 1, else 0
-        game_df['reward'] = game_df['final_outcome'].to_numpy() * game_df['is_final_shot'].to_numpy()
-
         # Split into rallies for feeding into the LSTM network.
-        reward_loc = game_df.columns.get_loc('reward')
-        rallies = []
+        rallies:List[pd.DataFrame] = []
         rally_start = 0
         for stroke_idx, is_final_shot in game_df['is_final_shot'].items():
             # If final shot of the rally
@@ -86,15 +93,6 @@ def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], 
                 # Get the sequence of strokes representing the rally
                 rally_end = stroke_idx + 1
                 rally = game_df[rally_start:rally_end]
-
-                # If the last stroke is a loss for the hitter, 
-                # assign reward to the prev stroke
-                rally_length = rally_end - rally_start
-                # If rally_length == 1 and no rewards, it means
-                # the hitter failed at the serve stroke
-                if (rally_length > 1 and rally.iloc[-1, reward_loc] != 1):
-                    rally.iloc[-2, reward_loc] = 1
-
                 rallies.append(rally)
                 # Reset rally start
                 rally_start = rally_end
@@ -109,52 +107,100 @@ def _initialize_data() -> Tuple[List[List[np.ndarray]], List[List[np.ndarray]], 
             shuffle=True,
         )
 
-        # Extract features
-        train_states = []
-        train_actions = []
-        train_rewards = []
-        test_states = []
-        test_actions = []
-        test_rewards = []
-        for rally_train in rallies_train:
-            train_states.append(rally_train[state_cols].to_numpy())
-            train_actions.append(rally_train[action_cols].to_numpy())
-            train_rewards.append(rally_train[reward_cols].to_numpy())
-        for rally_test in rallies_test:
-            test_states.append(rally_test[state_cols].to_numpy())
-            test_actions.append(rally_test[action_cols].to_numpy())
-            test_rewards.append(rally_test[reward_cols].to_numpy())
+        def _extract_seqs_from_rally(rally:pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+            """Extract sequences of states, action, reward triplets from the given rally `pd.DataFrame`
+            
+            Returns
+                state_seq, action_seq, reward_seq 
+            """
 
-        # Store
-        train_dataset['states'].append(train_states)
-        train_dataset['actions'].append(train_actions)
-        train_dataset['rewards'].append(train_rewards)
-        test_dataset['states'].append(test_states)
-        test_dataset['actions'].append(test_actions)
-        test_dataset['rewards'].append(test_rewards)
+            stroke_count = rally.shape[0]
+            # hit_x_cols or opp_x_cols doesn't matter since they have the same length
+            state_col_count = len(hit_state_cols)
+            action_col_count = len(hit_action_cols)
+
+            # shape = (# of players, # of strokes in rally, # of features)
+            # Let player at index 0 be winner. 1 is loser.
+            state_seq = np.zeros((2, stroke_count, state_col_count))
+            action_seq = np.zeros((2, stroke_count, action_col_count))
+            # All rewards are zero until decided otherwise
+            reward_seq = np.zeros((2, stroke_count, 1))
+
+            rally_start_idx = rally.index.start
+            for stroke_idx, stroke in rally.iterrows():
+
+                # Normalize idx
+                stroke_idx = stroke_idx - rally_start_idx
+
+                # Get the hitter state/action/reward sequences
+                hit_state = stroke[hit_state_cols].to_numpy()
+                hit_action = stroke[hit_action_cols].to_numpy()
+
+                # Get the opponent state/action/reward sequences
+                opp_state = stroke[opp_state_cols].to_numpy()
+                opp_action = stroke[opp_action_cols].to_numpy()
+                opp_action[-3] = -1 # shot_type
+                opp_action[-2] = 0 # bounce_x
+                opp_action[-1] = 0 # bounce_y
+
+                # Add the hitter/opponent df's to the winner or loser sequence, depending
+                # on which player wins/loses
+                if (stroke['final_outcome'] == 1):
+                    # Hitter wins
+                    state_seq[0][stroke_idx] = hit_state
+                    action_seq[0][stroke_idx] = hit_action
+                    state_seq[1][stroke_idx] = opp_state
+                    action_seq[1][stroke_idx] = opp_action
+                else:
+                    # Hitter loses
+                    state_seq[0][stroke_idx] = opp_state
+                    action_seq[0][stroke_idx] = opp_action
+                    state_seq[1][stroke_idx] = hit_state
+                    action_seq[1][stroke_idx] = hit_action
+
+                # If stroke is final shot, set the winner's reward as 1
+                # Leave loser's reward as 0
+                if (stroke['is_final_shot'] == 1):
+                    reward_seq[0][stroke_idx] = 1
+
+            return state_seq, action_seq, reward_seq
+
+        # Extract features
+        for rally_train in rallies_train:
+            rally_state_seq, rally_action_seq, rally_reward_seq = _extract_seqs_from_rally(rally_train)
+            train_dataset['states'].append(rally_state_seq)
+            train_dataset['actions'].append(rally_action_seq)
+            train_dataset['rewards'].append(rally_reward_seq)
+        for rally_test in rallies_test:
+            # Extract data from each rally
+            rally_state_seq, rally_action_seq, rally_reward_seq = _extract_seqs_from_rally(rally_test)
+            test_dataset['states'].append(rally_state_seq)
+            test_dataset['actions'].append(rally_action_seq)
+            test_dataset['rewards'].append(rally_reward_seq)
 
     return train_dataset, test_dataset
 
-# Split into train and test
-train_dataset:Dict[str, List[List[np.ndarray]]] = {}
+train_dataset:Dict[str, List[np.ndarray]] = {}
 """
 Contains the training rally samples for states/actions/rewards
 
-Keys: ''
+The numpy array in this structure is a 3D array
 
 Note: `train[states/actions/rewards][a][b][c][d]`
-- `a` indicates the game index
-- `b` indicates the rally index
+- `a` indicates the rally index
+- `b` indicates the player index (0 for winner, 1 for loser)
 - `c` indicates the stroke index
 - `d` indicates the feature index
 """
-test_dataset:Dict[str, List[List[np.ndarray]]] = {}
+test_dataset:Dict[str, List[np.ndarray]] = {}
 """
 Contains the testing rally samples for states/actions/rewards
 
+The numpy array in this structure is a 3D array
+
 Note: `test[states/actions/rewards][a][b][c][d]`
-- `a` indicates the game index
-- `b` indicates the rally index
+- `a` indicates the rally index
+- `b` indicates the player index (0 for winner, 1 for loser)
 - `c` indicates the stroke index
 - `d` indicates the feature index
 """
