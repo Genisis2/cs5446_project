@@ -36,11 +36,16 @@ class TennisEvalNN(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, sa_pairs):
+        # Note: batch_size should be 2, one seq for each player in a rally
+        # shape: (batch_size, seq_length, lstm_hidden_size)
         output, _ = self.lstm(sa_pairs)
+        # shape: (batch_size, seq_length, linear1_output)
         output = self.linear1(output)
         output = self.relu(output)
+        # shape: (batch_size, seq_length, linear2_output)
         output = self.linear2(output)
         output = self.relu(output)
+        # shape: (batch_size, seq_length, linear3_output)
         output = self.linear3(output)
         return output
 
