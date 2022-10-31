@@ -44,9 +44,9 @@ https://en.wikipedia.org/wiki/Glossary_of_tennis_terms
 #### Actions
 - `curr_hit_x`: (Check later if these features affect results) X-pos of the hitting player at the moment of hitting the ball
 - `curr_hit_y`: (Check later if these features affect results) Y-pos of the hitting player at the moment of hitting the ball
-- `shot_type`: (need to add): 0, `is_serve`. 1, `is_forehand`. 2, `is_backhand`
-- `bounce_x`: X-pos where the ball bounces on the court after `hit_id` hits back
-- `bounce_y`: Y-pos where the ball bounces on the court after `hit_id` hits back
+- `shot_type`: (need to add): -1 not hitting, 0, `is_serve`. 1, `is_forehand`. 2, `is_backhand`
+- `bounce_x`: 0 if `shot_type` is -1. X-pos where the ball bounces on the court after `hit_id` hits back
+- `bounce_y`: 0 if `shot_type` is -1. Y-pos where the ball bounces on the court after `hit_id` hits back
 
 #### Goal
 - `reward` (need to add): 1 if `final_outcome` and `is_final_shot` are both 1. 0, otherwise.
