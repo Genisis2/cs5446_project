@@ -5,10 +5,12 @@ import torch
 import os
 import numpy as np
 import math
+import random
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 curr_file_path = os.path.dirname(os.path.realpath(__file__))
-model_path =  os.path.join(curr_file_path, '../models/model.pth')
+model_dirpath =  os.path.join(curr_file_path, 'model/')
+model_filepath =  os.path.join(model_dirpath, 'model.pth')
 
 # Hyperparameters
 learning_rate = 1e-4
@@ -33,8 +35,8 @@ class TennisEvalNN(nn.Module):
         self.linear3 = nn.Linear(linear2_output, linear3_output)
         self.relu = nn.ReLU()
 
-    def forward(self, s_a_pair):
-        output, _ = self.lstm(s_a_pair)
+    def forward(self, sa_pairs):
+        output, _ = self.lstm(sa_pairs)
         output = self.linear1(output)
         output = self.relu(output)
         output = self.linear2(output)
@@ -52,14 +54,21 @@ def train():
     optimizer = optim.Adam(model_net.parameters(), lr=learning_rate)
     MSELoss = nn.MSELoss().to(device)
 
+    # For calculating ave. loss
+    losses = []
+
     # Train for num_epochs
     for e in range(num_epochs):
 
         print(f'Epoch: {e}')
 
-        for rally in train_dataset:
+        # Randomize order of which rallies to use
+        rally_indices = [i for i in range(len(train_dataset))]
+        random.shuffle(rally_indices)
+        for rally_idx in rally_indices:
 
             # Get rally data
+            rally = train_dataset[rally_idx]
             states = torch.from_numpy(rally['states']).float().to(device)
             actions = torch.from_numpy(rally['actions']).float().to(device)
             rewards = torch.from_numpy(rally['rewards']).float().to(device)
@@ -85,13 +94,18 @@ def train():
             loss.backward()
             optimizer.step()
             
-            print(f"    {loss}")
+            losses.append(loss.item())
 
-        # Sync target net with model net
+        # Print ave loss and reset
+        print(f"    Avg. Loss: {np.mean(losses)}")
+        losses = []
+
+        # Sync target net with model net at certain intervals
         if e % 5 == 0:
             target_net.load_state_dict(model_net.state_dict())
-            
-    torch.save(model_net.state_dict(), model_path)
+
+    os.makedirs(model_dirpath)
+    torch.save(model_net.state_dict(), model_filepath)
 
     eval()
         
