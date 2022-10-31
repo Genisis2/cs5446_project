@@ -13,66 +13,58 @@ _DATA_DIRP = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'csv/')
 _TRAIN_PERCENT = 0.8
 _SAMPLE_SEED = 42
 
-def _initialize_data() -> Tuple[Dict[str, List[np.ndarray]], Dict[str, List[np.ndarray]]]:
+# Features to extract
+hit_state_cols = [
+    'prev_hit_x',
+    'prev_hit_y',
+    'prev_opp_x',
+    'prev_opp_y',
+    'curr_opp_x',
+    'curr_opp_y',
+    'opp_move_dist',
+    'opp_move_speed',
+    'prev_bounce_x',
+    'prev_bounce_y'
+]
+hit_action_cols = [
+    'curr_hit_x',
+    'curr_hit_y', 
+    'hit_move_dist',
+    'hit_move_speed',
+    'shot_type',
+    'bounce_x',
+    'bounce_y'
+]
+opp_state_cols = [
+    'prev_opp_x',
+    'prev_opp_y',
+    'prev_hit_x',
+    'prev_hit_y',
+    'curr_hit_x',
+    'curr_hit_y',
+    'hit_move_dist',
+    'hit_move_speed',
+    'prev_bounce_x',
+    'prev_bounce_y'
+]
+opp_action_cols = [
+    'curr_opp_x',
+    'curr_opp_y',
+    'opp_move_dist',
+    'opp_move_speed',
+    'shot_type',
+    'bounce_x',
+    'bounce_y'
+]
+
+def _initialize_data() -> Tuple[List[Dict[str, np.ndarray]], List[Dict[str, np.ndarray]]]:
     """Initializes tennis match data using CSV's in csv/
 
     Returns
         train_dataset, test_dataset
     """
-    # Features to extract
-    hit_state_cols = [
-        'prev_hit_x',
-        'prev_hit_y',
-        'prev_opp_x',
-        'prev_opp_y',
-        'curr_opp_x',
-        'curr_opp_y',
-        'opp_move_dist',
-        'opp_move_speed',
-        'prev_bounce_x',
-        'prev_bounce_y'
-    ]
-    hit_action_cols = [
-        'curr_hit_x',
-        'curr_hit_y', 
-        'hit_move_dist',
-        'hit_move_speed',
-        'shot_type',
-        'bounce_x',
-        'bounce_y'
-    ]
-    opp_state_cols = [
-        'prev_opp_x',
-        'prev_opp_y',
-        'prev_hit_x',
-        'prev_hit_y',
-        'curr_hit_x',
-        'curr_hit_y',
-        'hit_move_dist',
-        'hit_move_speed',
-        'prev_bounce_x',
-        'prev_bounce_y'
-    ]
-    opp_action_cols = [
-        'curr_opp_x',
-        'curr_opp_y',
-        'opp_move_dist',
-        'opp_move_speed',
-        'shot_type',
-        'bounce_x',
-        'bounce_y'
-    ]
-    
-    train_dataset:Dict[str, List[List[np.ndarray]]] = {
-        'states': [],
-        'actions': [],
-        'rewards': []
-    }
-    test_dataset:Dict[str, List[List[np.ndarray]]] = {
-        'states': [],
-        'actions': [],
-        'rewards': []
-    }
+    train_dataset:List[Dict[str, np.ndarray]] = []
+    test_dataset:List[Dict[str, np.ndarray]] = []
 
     # Read the data from the input files
     for csv_fn in os.listdir(_DATA_DIRP):
@@ -168,37 +160,43 @@ def _initialize_data() -> Tuple[Dict[str, List[np.ndarray]], Dict[str, List[np.n
         # Extract features
         for rally_train in rallies_train:
             rally_state_seq, rally_action_seq, rally_reward_seq = _extract_seqs_from_rally(rally_train)
-            train_dataset['states'].append(rally_state_seq)
-            train_dataset['actions'].append(rally_action_seq)
-            train_dataset['rewards'].append(rally_reward_seq)
+            rally_dict = {
+                'states': rally_state_seq,
+                'actions': rally_action_seq,
+                'rewards': rally_reward_seq
+            }
+            train_dataset.append(rally_dict)
         for rally_test in rallies_test:
             # Extract data from each rally
             rally_state_seq, rally_action_seq, rally_reward_seq = _extract_seqs_from_rally(rally_test)
-            test_dataset['states'].append(rally_state_seq)
-            test_dataset['actions'].append(rally_action_seq)
-            test_dataset['rewards'].append(rally_reward_seq)
+            rally_dict = {
+                'states': rally_state_seq,
+                'actions': rally_action_seq,
+                'rewards': rally_reward_seq
+            }
+            test_dataset.append(rally_dict)
 
     return train_dataset, test_dataset
 
-train_dataset:Dict[str, List[np.ndarray]] = {}
+train_dataset:List[Dict[str, np.ndarray]]
 """
 Contains the training rally samples for states/actions/rewards
 
 The numpy array in this structure is a 3D array
 
-Note: `train[states/actions/rewards][a][b][c][d]`
+Note: `train[a][states/actions/rewards][b][c][d]`
 - `a` indicates the rally index
 - `b` indicates the player index (0 for winner, 1 for loser)
 - `c` indicates the stroke index
 - `d` indicates the feature index
 """
-test_dataset:Dict[str, List[np.ndarray]] = {}
+test_dataset:List[Dict[str, np.ndarray]]
 """
 Contains the testing rally samples for states/actions/rewards
 
 The numpy array in this structure is a 3D array
 
-Note: `test[states/actions/rewards][a][b][c][d]`
+Note: `test[a][states/actions/rewards][b][c][d]`
 - `a` indicates the rally index
 - `b` indicates the player index (0 for winner, 1 for loser)
 - `c` indicates the stroke index
