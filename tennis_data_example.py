@@ -1,30 +1,30 @@
 from data import train_dataset, test_dataset
 
 # Get the sequences of strokes for the train dataset's first match's first rally
-first_match_first_rally_state_seq = train_dataset['states'][0][0]
-first_match_first_rally_actions_seq = train_dataset['actions'][0][0]
-first_match_first_rally_rewards_seq = train_dataset['rewards'][0][0]
+first_match_first_rally_state_seq = train_dataset[0]['states'][0]
+first_match_first_rally_actions_seq = train_dataset[0]['actions'][0]
+first_match_first_rally_rewards_seq = train_dataset[0]['rewards'][0]
 
 print(first_match_first_rally_state_seq)
 print(first_match_first_rally_actions_seq)
 print(first_match_first_rally_rewards_seq)
 
 # Get the first stroke (should be a serve) for the test dataset's 3rd match 6th rally
-third_match_sixth_rally_state_serve = test_dataset['states'][2][5][0]
-third_match_sixth_rally_actions_serve = test_dataset['actions'][2][5][0]
-third_match_sixth_rally_rewards_serve = test_dataset['rewards'][2][5][0]
+third_match_sixth_rally_state_serve = test_dataset[3]['states'][1][0]
+third_match_sixth_rally_actions_serve = test_dataset[3]['actions'][1][0]
+third_match_sixth_rally_rewards_serve = test_dataset[3]['rewards'][1][0]
 
 print(third_match_sixth_rally_state_serve)
 print(third_match_sixth_rally_actions_serve)
 print(third_match_sixth_rally_rewards_serve)
 
-train_states = train_dataset['states']
-train_actions = train_dataset['actions']
-train_rewards = train_dataset['rewards']
+train_states = [data['states'] for data in train_dataset]
+train_actions = [data['actions'] for data in train_dataset]
+train_rewards = [data['rewards'] for data in train_dataset]
 
-test_states = test_dataset['states']
-test_actions = test_dataset['actions']
-test_rewards = test_dataset['rewards']
+test_states = [data['states'] for data in test_dataset]
+test_actions = [data['actions'] for data in test_dataset]
+test_rewards = [data['rewards'] for data in test_dataset]
 
 # Sanity check that all rows in all files are included
 total_rows_per_match = []

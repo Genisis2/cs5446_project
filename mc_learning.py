@@ -5,32 +5,42 @@ import pickle
 
 from data import train_dataset, test_dataset
 
-filename = 'finalized_model.sav'
+filename = 'linear_regression.sav'
 
-def _flatten(array):
-    return [item for sublist in array for item in sublist]
+
+def process_data(dataset):
+    # rallies from different games merged into one list
+    states, actions, rewards = [], [], []
+    for data in dataset:
+        for state, action, reward in zip(data['states'], data['actions'], data['rewards']):
+            states.extend(state)
+            actions.extend(action)
+            rewards.extend(reward)
+
+    inputs = []
+    for state, action in zip(states, actions):
+        inputs.append(np.concatenate([state, action]))
+    inputs, rewards = np.array(inputs), np.array(rewards)
+    return inputs, rewards
+
 
 def train() -> None:
-    states, actions, rewards = train_dataset['states'], train_dataset['actions'], train_dataset['rewards']
-    
-    # flatten the game index - rallies from different games merged into one list
-    states, actions, rewards = _flatten(states), _flatten(actions), _flatten(rewards)
-    
+    inputs, rewards = process_data(train_dataset)
+
     model = LinearRegression()
-    model.fit(zip(states, actions), rewards)
-    print(model.score(zip(states, actions), rewards))
+    model.fit(inputs, rewards)
 
     # store the model
     pickle.dump(model, open(filename, 'wb'))
 
 
 def test() -> None:
-    states, actions, rewards = test_dataset['states'], test_dataset['actions'], test_dataset['rewards']
-    states, actions, rewards = _flatten(states), _flatten(actions), _flatten(rewards)
+    inputs, rewards = process_data(test_dataset)
     loaded_model = pickle.load(open(filename, 'rb'))
-    result = loaded_model.score(zip(states, actions), rewards)
-    print(result)
+    result = loaded_model.score(inputs, rewards)
+    print(result)  # 0.047920123567392836, the result is not so good, I guess it might be caused by too much dimensions, not able to find the linear relationship
 
 
 if __name__ == '__main__':
     train()
+    test()
