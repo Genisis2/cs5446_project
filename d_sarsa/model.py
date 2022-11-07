@@ -11,17 +11,18 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 curr_file_path = os.path.dirname(os.path.realpath(__file__))
 model_dirpath =  os.path.join(curr_file_path, 'model/')
 model_filepath =  os.path.join(model_dirpath, 'model.pth')
+USE_MC = True
 
 # Hyperparameters
-learning_rate = 1e-4
+learning_rate = 1e-3 # 1e-4
 gamma = 1
 num_epochs = 30
 
 # Architecture
 lstm_input_size = len(hit_action_cols) + len(hit_state_cols) # Length of hit/opp are the same
-lstm_hidden_size = 512
-linear1_output = 1024
-linear2_output = 1000
+lstm_hidden_size = 64 # 512
+linear1_output = 32 # 1024
+linear2_output = 16 # 1000
 linear3_output = 1
 
 # Model
@@ -92,7 +93,13 @@ def train():
                 target_q[:,0:-1] = target_net(sa_pairs[:,1:]).detach()
 
             # TD target
-            y = rewards + gamma*target_q
+            if not USE_MC:
+                y = rewards + gamma*target_q
+            # MC
+            else:
+                for i in range(len(rewards[0])):
+                    rewards[0, i, 0] = 1
+                y = rewards
 
             loss = MSELoss(eval_q, y)
             optimizer.zero_grad()
@@ -108,7 +115,7 @@ def train():
         # Sync target net with model net at certain intervals
         if e % 5 == 0:
             target_net.load_state_dict(model_net.state_dict())
-
+    
     os.makedirs(model_dirpath)
     torch.save(model_net.state_dict(), model_filepath)
 
@@ -116,28 +123,39 @@ def train():
         
 # Evaluate
 def eval():
-    pass
-    # # Validation
-    # model = TennisEvalNN().to(device)
-    # model.load_state_dict(torch.load(model_path))
-    # model.eval()
-    # i = 0
-    # q_dist = 0
-    # for rally_idx, rally in enumerate(test_dataset):
+    
+    # Retsore model and set to eval mode
+    model = TennisEvalNN().to(device)
+    model.load_state_dict(torch.load(model_filepath))
+    model.eval()
 
-    #     states = torch.from_numpy(rally['states'])
-    #     actions = torch.from_numpy(rally['actions'])
-    #     sa_pairs = torch.cat([states, actions], -1)
+    correct, false = 0, 0
+    mse = 0
+    num = 0
+    for rally_idx, rally in enumerate(test_dataset):
+        rally = train_dataset[rally_idx]
+        states = torch.from_numpy(rally['states']).float().to(device)
+        actions = torch.from_numpy(rally['actions']).float().to(device)
+        rewards = torch.from_numpy(rally['rewards']).float().to(device)
+        sa_pairs = torch.cat([states, actions], -1)
+        win_probs = model(sa_pairs).cpu().detach().numpy()
 
-    #     win_prob = model(sa_pairs).cpu().detach().numpy().item()
+        winner_win_probs = win_probs[0].reshape(-1)
+        loser_win_probs = win_probs[1].reshape(-1)
 
-    #     final_indices = np.where(rewards != 0)[0]
-    #     steps_to_final = final_indices[final_indices >= i][0] - i
-    #     if final_outcomes[i] == 1:
-    #         q_dist += abs(max(0.5, math.pow(gamma, steps_to_final)) - win_prob)
-    #     else:
-    #         q_dist += abs(1 - max(0.5, math.pow(gamma, steps_to_final)) - win_prob)
-    #     i += 1
-    # print('Validation Q distance:', q_dist)
-    # print('Average Q distance:', q_dist / len(events))
-    # print()
+        num += 2 * len(winner_win_probs)
+
+        correct += (len(winner_win_probs[winner_win_probs >= 0.5]) + len(loser_win_probs[loser_win_probs < 0.5]))
+        false += (len(winner_win_probs[winner_win_probs < 0.5]) + len(loser_win_probs[loser_win_probs >= 0.5]))
+
+        mse += sum([(1 - win_prob)**2 for win_prob in winner_win_probs])
+        mse += sum([(1 - win_prob)**2 for win_prob in loser_win_probs])
+
+        print('Accuracy:', correct/(correct+false))
+        print('MSE:', mse / num)
+
+    print('Accuracy:', correct / (correct + false))
+    print('MSE:', mse / num)
+
+train()
+eval()
