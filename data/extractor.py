@@ -21,7 +21,6 @@ hit_state_cols = [
     'prev_opp_y',
     'curr_opp_x',
     'curr_opp_y',
-    'opp_move_dist',
     'opp_move_speed',
     'prev_bounce_x',
     'prev_bounce_y'
@@ -29,7 +28,6 @@ hit_state_cols = [
 hit_action_cols = [
     'curr_hit_x',
     'curr_hit_y', 
-    'hit_move_dist',
     'hit_move_speed',
     'shot_type',
     'bounce_x',
@@ -42,7 +40,6 @@ opp_state_cols = [
     'prev_hit_y',
     'curr_hit_x',
     'curr_hit_y',
-    'hit_move_dist',
     'hit_move_speed',
     'prev_bounce_x',
     'prev_bounce_y'
@@ -50,7 +47,6 @@ opp_state_cols = [
 opp_action_cols = [
     'curr_opp_x',
     'curr_opp_y',
-    'opp_move_dist',
     'opp_move_speed',
     'shot_type',
     'bounce_x',

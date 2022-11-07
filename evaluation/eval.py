@@ -7,12 +7,10 @@ def score_model(test_dataset:List[Dict[str, np.ndarray]], get_win_prediction:Cal
     
     Parameters:
     - test_dataset:List[Dict[str, np.ndarray]]
-
-        The dataset to use to score the model
+        - The dataset to use to score the model
 
     - get_win_prediction:function
-        
-        Function that receives a $(s,a)$ pair for the model to calculate $Q(s,a)$ for. Return of the
+        - Function that receives a $(s,a)$ pair for the model to calculate $Q(s,a)$ for. Return of the
         function should be $Q(s,a)$
     """
 
@@ -52,7 +50,5 @@ def score_model(test_dataset:List[Dict[str, np.ndarray]], get_win_prediction:Cal
 
     # Final score
     score = correct_pred / (len(pred_win_win_probs) + len(pred_loser_lose_probs))
-
-    print(f"Accuracy: {score}")
 
     return score
