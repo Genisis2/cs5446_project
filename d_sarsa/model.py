@@ -8,10 +8,9 @@ import math
 import random
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-curr_file_path = os.path.dirname(os.path.realpath(__file__))
-model_dirpath =  os.path.join(curr_file_path, 'model/')
+curr_dirpath = os.path.dirname(os.path.realpath(__file__))
+model_dirpath =  os.path.join(curr_dirpath, 'model/')
 model_filepath =  os.path.join(model_dirpath, 'model.pth')
-USE_MC = True
 
 # Hyperparameters
 learning_rate = 1e-3 # 1e-4
@@ -51,7 +50,7 @@ class TennisEvalNN(nn.Module):
         return output
 
 # Train
-def train():
+def train(save=True, use_mc=False) -> TennisEvalNN:
 
     # Create models
     model_net, target_net = TennisEvalNN().to(device), TennisEvalNN().to(device)
@@ -120,6 +119,8 @@ def train():
     torch.save(model_net.state_dict(), model_filepath)
 
     eval()
+
+    return model_net
         
 # Evaluate
 def eval():
@@ -138,6 +139,7 @@ def eval():
         actions = torch.from_numpy(rally['actions']).float().to(device)
         rewards = torch.from_numpy(rally['rewards']).float().to(device)
         sa_pairs = torch.cat([states, actions], -1)
+        
         win_probs = model(sa_pairs).cpu().detach().numpy()
 
         winner_win_probs = win_probs[0].reshape(-1)
