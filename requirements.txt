@@ -2,3 +2,5 @@ pandas
 numpy
 torch
 sklearn
+ipykernel
+torch-snippets
