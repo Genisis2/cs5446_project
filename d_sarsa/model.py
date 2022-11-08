@@ -1,5 +1,5 @@
 from torch_snippets import Report
-from typing import Tuple
+from typing import Any, Dict, Tuple
 from data import train_dataset, test_dataset, hit_action_cols, hit_state_cols
 import torch.nn as nn
 import torch.optim as optim
@@ -15,15 +15,15 @@ model_dirpath =  os.path.join(curr_dirpath, 'model/')
 model_filepath =  os.path.join(model_dirpath, 'model.pth')
 
 # Hyperparameters
-learning_rate = 1e-4 # 5e-4 # 1e-4
+learning_rate = 1e-4 # 1e-3
 gamma = 1
-num_epochs = 200 # 200 # 30
+num_epochs = 100 # 30
 
 # Architecture
 lstm_input_size = len(hit_action_cols) + len(hit_state_cols) # Length of hit/opp are the same
-lstm_hidden_size = 512 # 64 # 512
-linear1_output = 1024 # 32 # 1024
-linear2_output = 1000 # 16 # 1000
+lstm_hidden_size = 512
+linear1_output = 1024
+linear2_output = 1000
 linear3_output = 1
 
 # Model
@@ -79,28 +79,41 @@ def get_prediction_accuracy(pred):
     total_preds = (winner_win_probs.shape[0] + loser_win_probs.shape[0])
     return correct / total_preds
 
-
 # Train
-def train(save=True, use_mc=False) -> Tuple[TennisEvalNN, Report]:
+def train(save=True, use_mc=False, init_state_dict:Dict[str,Any]=None) -> Tuple[TennisEvalNN, Report]:
 
     # Create models
     model_net, target_net = TennisEvalNN().to(device), TennisEvalNN().to(device)
+
+    # Use init_state_dict if present
+    if init_state_dict is not None:
+        print("Init state dictionary was passed. Using that to initialize model_net.")
+        model_net.load_state_dict(init_state_dict)
+
+    # Initialize weights of target net with model net
+    target_net.load_state_dict(model_net.state_dict())
+    target_net.eval()
 
     # Optimizer and criterions
     optimizer = optim.Adam(model_net.parameters(), lr=learning_rate)
     MSELoss = nn.MSELoss().to(device)
 
-    # For calculating ave. loss
+    # For calculating ave.
     losses = []
+    accuracies = []
 
     # Train for num_epochs
     log = Report(num_epochs)
     for e in range(num_epochs):
 
+        # Mark for logging that this is the start of a new epoch
+        pos = e
+
         # Training
         # Randomize order of which rallies to use
         model_net.train()
-        rally_indices = [i for i in range(len(train_dataset))]
+        dataset_len = len(train_dataset)
+        rally_indices = [i for i in range(dataset_len)]
         random.shuffle(rally_indices)
         for rally_idx in rally_indices:
 
@@ -131,15 +144,26 @@ def train(save=True, use_mc=False) -> Tuple[TennisEvalNN, Report]:
             loss.backward()
             optimizer.step()
             
-            losses.append(loss.item())
             accuracy = get_prediction_accuracy(eval_q)
+            losses.append(loss.item())
+            accuracies.append(accuracy)
             
-            pos = e + (rally_idx + 1)/len(rally_indices)
+            # Log and track for graphs
+            pos += (1 / dataset_len)
             log.record(pos, train_loss=loss.item(), train_acc=accuracy, end='\r')
 
-        # Print ave loss and reset
-        print(f"    Avg. Loss: {np.mean(losses)}")
+        # Print ave's
+        ave_loss = np.mean(losses)
+        ave_acc = np.mean(accuracies)
+
+        # Log and track for graphs
+        log.record(e + 1, train_ave_loss=ave_loss, train_ave_acc=ave_acc, end='\r')
+        print(f" ave_loss: {ave_loss} ave_acc: {ave_acc}")
+        
+        # Reset average trackers
         losses = []
+        accuracies = []
+
 
         # Sync target net with model net at certain intervals
         if e % 5 == 0:
@@ -154,41 +178,43 @@ def train(save=True, use_mc=False) -> Tuple[TennisEvalNN, Report]:
     return model_net, log
         
 # Evaluate
-# def eval():
+def eval(model):
     
-#     # Retsore model and set to eval mode
-#     model = TennisEvalNN().to(device)
-#     model.load_state_dict(torch.load(model_filepath))
-#     model.eval()
+    # Retsore model and set to eval mode
+    # model = TennisEvalNN().to(device)
+    # model.load_state_dict(torch.load(model_filepath))
+    model.eval()
 
-#     correct, false = 0, 0
-#     mse = 0
-#     num = 0
-#     for rally_idx, rally in enumerate(test_dataset):
-#         rally = train_dataset[rally_idx]
-#         states = torch.from_numpy(rally['states']).float().to(device)
-#         actions = torch.from_numpy(rally['actions']).float().to(device)
-#         rewards = torch.from_numpy(rally['rewards']).float().to(device)
-#         sa_pairs = torch.cat([states, actions], -1)
+    correct, false = 0, 0
+    mse = 0
+    num = 0
+    for rally_idx, rally in enumerate(test_dataset):
+        rally = test_dataset[rally_idx]
+        states = torch.from_numpy(rally['states']).float().to(device)
+        actions = torch.from_numpy(rally['actions']).float().to(device)
+        rewards = torch.from_numpy(rally['rewards']).float().to(device)
+        sa_pairs = torch.cat([states, actions], -1)
         
-#         win_probs = model(sa_pairs).cpu().detach().numpy()
+        win_probs = model(sa_pairs).cpu().detach().numpy()
 
-#         winner_win_probs = win_probs[0].reshape(-1)
-#         loser_win_probs = win_probs[1].reshape(-1)
+        winner_win_probs = win_probs[0].reshape(-1)
+        loser_win_probs = win_probs[1].reshape(-1)
 
-#         num += 2 * len(winner_win_probs)
+        num += 2 * len(winner_win_probs)
 
-#         correct += (len(winner_win_probs[winner_win_probs >= 0.5]) + len(loser_win_probs[loser_win_probs < 0.5]))
-#         false += (len(winner_win_probs[winner_win_probs < 0.5]) + len(loser_win_probs[loser_win_probs >= 0.5]))
+        correct += (len(winner_win_probs[winner_win_probs >= 0.5]) + len(loser_win_probs[loser_win_probs < 0.5]))
+        false += (len(winner_win_probs[winner_win_probs < 0.5]) + len(loser_win_probs[loser_win_probs >= 0.5]))
 
-#         mse += sum([(1 - win_prob)**2 for win_prob in winner_win_probs])
-#         mse += sum([(1 - win_prob)**2 for win_prob in loser_win_probs])
+        mse += sum([(1 - win_prob)**2 for win_prob in winner_win_probs])
+        mse += sum([(0 - win_prob)**2 for win_prob in loser_win_probs])
 
-#         print('Accuracy:', correct/(correct+false))
-#         print('MSE:', mse / num)
+        print('Accuracy:', correct/(correct+false))
+        print('MSE:', mse / num)
 
-#     print('Accuracy:', correct / (correct + false))
-#     print('MSE:', mse / num)
+    print(f'Total num: {(correct + false)}')
+
+    print('Accuracy:', correct / (correct + false))
+    print('MSE:', mse / num)
 
 if __name__ == 'main':
     train()

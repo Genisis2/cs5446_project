@@ -1,8 +1,9 @@
 """
 Contains functions for evaluation
 """
-from .eval import score_model
+from .eval import score_model, score_model_sequential
 
 __all__ = [
-    score_model
+    score_model,
+    score_model_sequential
 ]
