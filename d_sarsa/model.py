@@ -15,7 +15,7 @@ model_dirpath =  os.path.join(curr_dirpath, 'model/')
 model_filepath =  os.path.join(model_dirpath, 'model.pth')
 
 # Hyperparameters
-learning_rate = 7e-4 # 1e-3
+learning_rate = 1e-3
 gamma = 1
 num_epochs = 200 # 30
 
@@ -80,7 +80,7 @@ def get_prediction_accuracy(pred):
     return correct / total_preds
 
 # Train
-def train(save=True, use_mc=False, init_state_dict:Dict[str,Any]=None) -> Tuple[TennisEvalNN, Report]:
+def train(save=True, use_mc=False, init_state_dict:Dict[str,Any]=None, num_epochs=num_epochs) -> Tuple[TennisEvalNN, Report]:
 
     # Create models
     model_net, target_net = TennisEvalNN().to(device), TennisEvalNN().to(device)
