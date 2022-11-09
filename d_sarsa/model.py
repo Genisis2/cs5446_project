@@ -15,9 +15,9 @@ model_dirpath =  os.path.join(curr_dirpath, 'model/')
 model_filepath =  os.path.join(model_dirpath, 'model.pth')
 
 # Hyperparameters
-learning_rate = 1e-4 # 1e-3
+learning_rate = 7e-4 # 1e-3
 gamma = 1
-num_epochs = 100 # 30
+num_epochs = 200 # 30
 
 # Architecture
 lstm_input_size = len(hit_action_cols) + len(hit_state_cols) # Length of hit/opp are the same
