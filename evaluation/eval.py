@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 from typing import Callable, List, Dict, Union
+import matplotlib.pyplot as plt
+
 
 def score_model(test_dataset:List[Dict[str, np.ndarray]], get_win_prediction:Callable[[np.ndarray], Union[np.ndarray, torch.Tensor]]):
     """Scores the performance of a model based on the given dataset
@@ -208,4 +210,30 @@ def get_ave_stroke_q_per_rally(test_dataset:List[Dict[str, np.ndarray]],
     for stroke_preds in pred_loser_win_probs:
         loser_ave_pred_per_stroke.append(np.mean(stroke_preds))
 
-    return winner_ave_pred_per_stroke, loser_ave_pred_per_stroke
+    return np.asarray(winner_ave_pred_per_stroke), np.asarray(loser_ave_pred_per_stroke)
+
+def plot_ave_stroke_q_per_rally(win_plot:np.ndarray, lose_plot:np.ndarray):
+    """Plots the outputs from `get_ave_stroke_q_per_rally`
+    
+    Parameters:
+    - win_plot:np.ndarray
+        - NDArray representing the ave. Q-values for each stroke in the winner's rally
+    - lose_plot:np.ndarray
+        - NDArray representing the ave. Q-values for each stroke in the loser's rally 
+    """
+
+    # Same size as other charts
+    sz = 8, 6
+    _, ax = plt.subplots(figsize=sz)
+
+    # win_plot and lose_plot are both expected to have the same length
+    rally_length = np.arange(len(win_plot))
+
+    ax.plot(rally_length, win_plot, "-", label="Winner")
+    ax.plot(rally_length, lose_plot, "-", label="Loser")
+
+    ax.grid(True)
+    ax.set_xlabel("(s,a) at time t")
+    ax.set_ylabel("Q(s,a)")
+    ax.legend()
+    plt.show()
