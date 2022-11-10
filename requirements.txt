@@ -1,4 +1,9 @@
 pandas
 numpy
-torch
+# torch
+# torchvision
 sklearn
+ipykernel
+ipywidgets
+torch_snippets
+matplotlib

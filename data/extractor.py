@@ -17,6 +17,10 @@ _SAMPLE_SEED = 42
 hit_state_cols = [
     'prev_hit_x',
     'prev_hit_y',
+    'curr_hit_x',
+    'curr_hit_y', 
+    'hit_move_dist',
+    'hit_move_speed',
     'prev_opp_x',
     'prev_opp_y',
     'curr_opp_x',
@@ -27,10 +31,6 @@ hit_state_cols = [
     'prev_bounce_y'
 ]
 hit_action_cols = [
-    'curr_hit_x',
-    'curr_hit_y', 
-    'hit_move_dist',
-    'hit_move_speed',
     'shot_type',
     'bounce_x',
     'bounce_y'
@@ -38,6 +38,10 @@ hit_action_cols = [
 opp_state_cols = [
     'prev_opp_x',
     'prev_opp_y',
+    'curr_opp_x',
+    'curr_opp_y',
+    'opp_move_dist',
+    'opp_move_speed',
     'prev_hit_x',
     'prev_hit_y',
     'curr_hit_x',
@@ -48,10 +52,6 @@ opp_state_cols = [
     'prev_bounce_y'
 ]
 opp_action_cols = [
-    'curr_opp_x',
-    'curr_opp_y',
-    'opp_move_dist',
-    'opp_move_speed',
     'shot_type',
     'bounce_x',
     'bounce_y'
