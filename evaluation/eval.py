@@ -233,7 +233,55 @@ def plot_ave_stroke_q_per_rally(win_plot:np.ndarray, lose_plot:np.ndarray):
     ax.plot(rally_length, lose_plot, "-", label="Loser")
 
     ax.grid(True)
-    ax.set_xlabel("(s,a) at time t")
-    ax.set_ylabel("Q(s,a)")
+    ax.set_xlabel("Time t")
+    ax.set_ylabel("Ave. Q-value of (s,a) at time t")
     ax.legend()
     plt.show()
+
+def plot_stroke_distribution(dataset:List[Dict[str, np.ndarray]]):
+    """Plots the amount of data available for each timestep in the dataset we have
+    
+    Parameters:
+    - dataset:List[Dict[str, np.ndarray]]
+        -  Dataset to gather metrics for
+    """
+    # Get sa_pairs
+    sa_pairs_seq = []
+    for rally in dataset:
+        for p_idx, (s, a) in enumerate(zip(rally['states'], rally['actions'])):
+            # Get sa_pair
+            sa_pairs = np.concatenate((s, a), axis=-1)
+            sa_pairs_seq.append(sa_pairs)
+            
+    # Count number strokes per timestep of rallies
+    rally_stroke_cnt = []
+    for sa_pair_seq in sa_pairs_seq:
+        # Count each stroke in the sequence
+        for stroke_idx, _ in enumerate(sa_pair_seq):
+            # Initialize count for timestep if not yet existing
+            if stroke_idx + 1 > len(rally_stroke_cnt):
+                rally_stroke_cnt.append(0)
+            # Increment stroke count for this timestep
+            rally_stroke_cnt[stroke_idx] += 1
+
+    # Print metrics
+    print(f"Summary metrics:")
+    print(f"    Rally count: {len(dataset)}")
+    print(f"    Trials count: {len(sa_pairs_seq)}")
+    print(f"    Total shot count: {np.sum(rally_stroke_cnt)}")
+    
+    # Same size as other charts
+    sz = 8, 6
+    _, ax = plt.subplots(figsize=sz)
+
+    # win_plot and lose_plot are both expected to have the same length
+    rally_length = np.arange(len(rally_stroke_cnt))
+
+    ax.bar(rally_length, np.asarray(rally_stroke_cnt))
+
+    ax.grid(True)
+    ax.set_xlabel("Time t")
+    ax.set_ylabel("No. of shots at time t")
+    plt.show()
+
+
