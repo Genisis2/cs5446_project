@@ -271,13 +271,14 @@ def plot_stroke_distribution(dataset:List[Dict[str, np.ndarray]]):
     print(f"    Total shot count: {np.sum(rally_stroke_cnt)}")
     
     # Same size as other charts
-    sz = 8, 6
+    sz = 8*1.5, 6
     _, ax = plt.subplots(figsize=sz)
 
     # win_plot and lose_plot are both expected to have the same length
     rally_length = np.arange(len(rally_stroke_cnt))
 
-    ax.bar(rally_length, np.asarray(rally_stroke_cnt))
+    bars = ax.bar(rally_length, np.asarray(rally_stroke_cnt))
+    ax.bar_label(bars)
 
     ax.grid(True)
     ax.set_xlabel("Time t")
